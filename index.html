@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: #5a67d8;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .input-section {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        #todo-input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        #todo-input:focus {
+            outline: none;
+            border-color: #5a67d8;
+        }
+
+        #add-btn {
+            padding: 14px 24px;
+            background: #5a67d8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #add-btn:hover {
+            background: #4c51bf;
+        }
+
+        .todo-list {
+            list-style: none;
+            padding: 10px 0;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .todo-item:hover {
+            background: #f7fafc;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #a0aec0;
+        }
+
+        .todo-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #cbd5e0;
+            border-radius: 50%;
+            margin-right: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .todo-checkbox:hover {
+            border-color: #5a67d8;
+        }
+
+        .todo-item.completed .todo-checkbox {
+            background: #48bb78;
+            border-color: #48bb78;
+        }
+
+        .todo-item.completed .todo-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 16px;
+            color: #2d3748;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            padding: 4px 8px;
+        }
+
+        .todo-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            color: #c53030;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a0aec0;
+        }
+
+        .empty-state p {
+            font-size: 18px;
+        }
+
+        footer {
+            padding: 16px 20px;
+            background: #f7fafc;
+            color: #718096;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #clear-completed {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #clear-completed:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>TODO アプリ</h1>
+        </header>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="todo-input" placeholder="新しいタスクを入力...">
+                <button id="add-btn">追加</button>
+            </div>
+        </div>
+
+        <ul class="todo-list" id="todo-list"></ul>
+
+        <footer>
+            <span id="todo-count">0 件のタスク</span>
+            <button id="clear-completed">完了済みを削除</button>
+        </footer>
+    </div>
+
+    <script>
+        // DOM要素の取得
+        const todoInput = document.getElementById('todo-input');
+        const addBtn = document.getElementById('add-btn');
+        const todoList = document.getElementById('todo-list');
+        const todoCount = document.getElementById('todo-count');
+        const clearCompletedBtn = document.getElementById('clear-completed');
+
+        // TODOリストのデータ
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+        // TODOリストを保存
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        // TODOリストを描画
+        function renderTodos() {
+            if (todos.length === 0) {
+                todoList.innerHTML = `
+                    <li class="empty-state">
+                        <p>タスクがありません</p>
+                    </li>
+                `;
+            } else {
+                todoList.innerHTML = todos.map((todo, index) => `
+                    <li class="todo-item ${todo.completed ? 'completed' : ''}" data-index="${index}">
+                        <div class="todo-checkbox" onclick="toggleTodo(${index})"></div>
+                        <span class="todo-text">${escapeHtml(todo.text)}</span>
+                        <button class="delete-btn" onclick="deleteTodo(${index})">×</button>
+                    </li>
+                `).join('');
+            }
+            updateCount();
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // タスク数を更新
+        function updateCount() {
+            const remaining = todos.filter(todo => !todo.completed).length;
+            todoCount.textContent = `${remaining} 件の未完了タスク`;
+        }
+
+        // TODOを追加
+        function addTodo() {
+            const text = todoInput.value.trim();
+            if (text) {
+                todos.push({ text, completed: false });
+                saveTodos();
+                renderTodos();
+                todoInput.value = '';
+                todoInput.focus();
+            }
+        }
+
+        // TODOの完了状態を切り替え
+        function toggleTodo(index) {
+            todos[index].completed = !todos[index].completed;
+            saveTodos();
+            renderTodos();
+        }
+
+        // TODOを削除
+        function deleteTodo(index) {
+            todos.splice(index, 1);
+            saveTodos();
+            renderTodos();
+        }
+
+        // 完了済みを一括削除
+        function clearCompleted() {
+            todos = todos.filter(todo => !todo.completed);
+            saveTodos();
+            renderTodos();
+        }
+
+        // イベントリスナー
+        addBtn.addEventListener('click', addTodo);
+        todoInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+        clearCompletedBtn.addEventListener('click', clearCompleted);
+
+        // 初期描画
+        renderTodos();
+    </script>
+</body>
+</html>
